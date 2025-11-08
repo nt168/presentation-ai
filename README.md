@@ -87,7 +87,8 @@ Before you begin, ensure you have the following installed:
 - Required API keys:
   - OpenAI API key (for AI generation features)
   - Together AI API key (for image generation)
-  - Google Client ID and Secret (for authentication)
+#  - Google Client ID and Secret (for authentication)
+- Client ID and Client Secret (for authentication)
 
 ### Installation
 
@@ -117,9 +118,14 @@ Before you begin, ensure you have the following installed:
    NEXTAUTH_SECRET=""
    NEXTAUTH_URL="http://localhost:3000"
 
-   # Google OAuth Provider
-   GOOGLE_CLIENT_ID=""
-   GOOGLE_CLIENT_SECRET=""
+#   # Google OAuth Provider
+#   GOOGLE_CLIENT_ID=""
+#   GOOGLE_CLIENT_SECRET=""
+   # Credentials Authentication
+   CLIENT_ID=""
+   CLIENT_SECRET=""
+
+
 
    # File Upload Service
    UPLOADTHING_TOKEN=""

@@ -3,7 +3,7 @@ import { db } from "@/server/db";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import NextAuth, { type DefaultSession, type Session } from "next-auth";
 import { type Adapter } from "next-auth/adapters";
-import GoogleProvider from "next-auth/providers/google";
+import CredentialsProvider from "next-auth/providers/credentials";
 declare module "next-auth" {
   interface Session extends DefaultSession {
     user: {
@@ -70,11 +70,17 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
       session.user.isAdmin = token.role === "ADMIN";
       return session;
     },
-    async signIn({ user, account }) {
-      if (account?.provider === "google") {
+    async signIn({ user, account, credentials }) {
+      if (account?.provider === "credentials") {
+        const identifier = credentials?.clientId ?? user.email ?? undefined;
+
+        if (!identifier) {
+          return false;
+        }
+
         const dbUser = await db.user.findUnique({
-          where: { email: user.email! },
-          select: { id: true, hasAccess: true, role: true },
+          	 where: { email: identifier },
+		select: { id: true, hasAccess: true, role: true },
         });
 
         if (dbUser) {
@@ -92,9 +98,42 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
 
   adapter: PrismaAdapter(db) as Adapter,
   providers: [
-    GoogleProvider({
-      clientId: env.GOOGLE_CLIENT_ID,
-      clientSecret: env.GOOGLE_CLIENT_SECRET,
+    CredentialsProvider({
+      name: "Credentials",
+      credentials: {
+        clientId: { label: "Client ID", type: "text" },
+        clientSecret: { label: "Client Secret", type: "password" },
+      },
+      async authorize(credentials) {
+        if (
+          !credentials?.clientId ||
+          !credentials?.clientSecret ||
+          credentials.clientId !== env.CLIENT_ID ||
+          credentials.clientSecret !== env.CLIENT_SECRET
+        ) {
+          return null;
+        }
+
+        const identifier = credentials.clientId;
+
+        const existingUser = await db.user.findUnique({
+          where: { email: identifier },
+        });
+
+        if (existingUser) {
+          return existingUser;
+        }
+
+        const newUser = await db.user.create({
+          data: {
+            email: identifier,
+            name: identifier,
+          },
+        });
+
+        return newUser;
+      },
+
     }),
   ],
 });
