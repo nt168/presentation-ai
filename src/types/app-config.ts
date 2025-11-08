@@ -17,12 +17,15 @@ export interface ImageModelOption {
   source: "remote" | "local";
 }
 
+export interface RemoteLLMConfig {
+  provider: string;
+  displayName: string;
+  isConfigured: boolean;
+}
+
 export interface AppConfig {
   llm: {
-    remote: {
-      provider: string;
-      displayName: string;
-    };
+    remote: RemoteLLMConfig;
     local: LocalLLMConfig | null;
   };
   image: {

@@ -135,12 +135,23 @@ export async function getAppConfig(): Promise<AppConfig> {
 
   const image = resolveImageModels();
 
+  const remoteEnvRaw = env.RMT_LLM_NAME;
+  const remoteNameFromEnv = remoteEnvRaw?.trim() ?? "";
+  const remoteIsConfigured =
+    remoteEnvRaw === undefined ? true : remoteNameFromEnv.length > 0;
+  const remoteDisplayName =
+    remoteEnvRaw === undefined
+      ? "GPT-4o-mini"
+      : remoteIsConfigured
+        ? remoteNameFromEnv
+        : "";
+
   return {
     llm: {
       remote: {
         provider: "openai",
-        displayName:
-          env.RMT_LLM_NAME?.trim() || "GPT-4o-mini",
+        displayName: remoteDisplayName,
+        isConfigured: remoteIsConfigured,
       },
       local:
         localConfig ?? {

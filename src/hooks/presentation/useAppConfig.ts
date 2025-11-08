@@ -6,6 +6,7 @@ const DEFAULT_APP_CONFIG: AppConfig = {
     remote: {
       provider: "openai",
       displayName: "GPT-4o-mini",
+      isConfigured: true,
     },
     local: {
       providerId: "ollama",

@@ -9,10 +9,10 @@ import {
   SelectTrigger,
 } from "@/components/ui/select";
 import {
-  fallbackModels,
   getSelectedModel,
   setSelectedModel,
   useLocalModels,
+  type LocalModelsDisplayData,
 } from "@/hooks/presentation/useLocalModels";
 import { useAppConfig } from "@/hooks/presentation/useAppConfig";
 import { usePresentationState } from "@/states/presentation-state";
@@ -49,17 +49,20 @@ export function ModelPicker({
   // Use cached data if available, otherwise show fallback
   const defaultLocalProviderLabel =
     appConfig?.llm.local?.displayName ?? "Ollama";
-  const cloudModelLabel = appConfig?.llm.remote.displayName ?? "GPT-4o-mini";
+  const remoteModelConfig = appConfig?.llm.remote;
+  const remoteModelLabel = remoteModelConfig?.displayName?.trim() ?? "";
+  const remoteIsConfigured = Boolean(
+    remoteModelConfig?.isConfigured && remoteModelLabel.length > 0,
+  );
 
-  const displayData = modelsData || {
-    localModels: fallbackModels,
-    downloadableModels: [],
-    showDownloadable: true,
-    localProviderLabel: defaultLocalProviderLabel,
-  };
+  const displayData: LocalModelsDisplayData =
+    modelsData ?? {
+      localModels: [],
+      localProviderLabel: defaultLocalProviderLabel,
+      command: null,
+    };
 
-  const { localModels, downloadableModels, showDownloadable, localProviderLabel } =
-    displayData;
+  const { localModels, localProviderLabel } = displayData;
   const resolvedLocalProviderLabel =
     localProviderLabel || defaultLocalProviderLabel;
 
@@ -70,15 +73,8 @@ export function ModelPicker({
   const lmStudioModels = localModels.filter(
     (model) => model.provider === "lmstudio",
   );
-  const downloadableOllamaModels = downloadableModels.filter(
-    (model) => model.provider === "ollama",
-  );
-
   // Helper function to create model option
-  const createModelOption = (
-    model: (typeof localModels)[0],
-    isDownloadable = false,
-  ) => ({
+  const createModelOption = (model: (typeof localModels)[0]) => ({
     id: model.id,
     label: model.name,
     displayLabel:
@@ -86,29 +82,37 @@ export function ModelPicker({
         ? `${resolvedLocalProviderLabel} ${model.name}`
         : `lm-studio ${model.name}`,
     icon: model.provider === "ollama" ? Cpu : Monitor,
-    description: isDownloadable
-      ? `Downloadable ${model.provider === "ollama" ? resolvedLocalProviderLabel : "LM Studio"} model (will auto-download)`
-      : `Local ${model.provider === "ollama" ? resolvedLocalProviderLabel : "LM Studio"} model`,
-    isDownloadable,
+    description: `Local ${
+      model.provider === "ollama"
+        ? resolvedLocalProviderLabel
+        : "LM Studio"
+    } model`,
   });
 
   // Get current model value
   const getCurrentModelValue = () => {
     if (modelProvider === "ollama") {
       return `ollama-${modelId}`;
-    } else if (modelProvider === "lmstudio") {
+    }
+
+    if (modelProvider === "lmstudio") {
       return `lmstudio-${modelId}`;
     }
-    return modelProvider;
+
+    if (modelProvider === "openai") {
+      return remoteIsConfigured ? "openai" : "";
+    }
+
+    return "";
   };
 
   // Get current model option for display
   const getCurrentModelOption = () => {
     const currentValue = getCurrentModelValue();
 
-    if (currentValue === "openai") {
+    if (currentValue === "openai" && remoteIsConfigured) {
       return {
-        label: cloudModelLabel,
+        label: remoteModelLabel,
         icon: Bot,
       };
     }
@@ -123,16 +127,6 @@ export function ModelPicker({
     }
 
     // Check downloadable models
-    const downloadableModel = downloadableModels.find(
-      (model) => model.id === currentValue,
-    );
-    if (downloadableModel) {
-      return {
-        label: downloadableModel.name,
-        icon: downloadableModel.provider === "ollama" ? Cpu : Monitor,
-      };
-    }
-
     return {
       label: "Select model",
       icon: Bot,
@@ -203,28 +197,42 @@ export function ModelPicker({
             </SelectGroup>
           )}
 
-          {/* OpenAI Group */}
-          <SelectGroup>
-          <SelectLabel>Cloud Models</SelectLabel>
-          <SelectItem value="openai">
-            <div className="flex items-center gap-3">
-              <Bot className="h-4 w-4 flex-shrink-0" />
-              <div className="flex flex-col min-w-0">
-                <span className="truncate text-sm">{cloudModelLabel}</span>
-                <span className="text-xs text-muted-foreground truncate">
-                  Cloud-based AI model
-                </span>
-              </div>
-            </div>
-          </SelectItem>
-        </SelectGroup>
+          {/* Remote LLM Group */}
+          {remoteModelConfig && (
+            <SelectGroup>
+              <SelectLabel>Remote Models</SelectLabel>
+              {remoteIsConfigured ? (
+                <SelectItem value="openai">
+                  <div className="flex items-center gap-3">
+                    <Bot className="h-4 w-4 flex-shrink-0" />
+                    <div className="flex flex-col min-w-0">
+                      <span className="truncate text-sm">{remoteModelLabel}</span>
+                      <span className="text-xs text-muted-foreground truncate">
+                        Remote AI model
+                      </span>
+                    </div>
+                  </div>
+                </SelectItem>
+              ) : (
+                <SelectItem value="remote-unavailable" disabled>
+                  <div className="flex items-center gap-3">
+                    <Bot className="h-4 w-4 flex-shrink-0" />
+                    <div className="flex flex-col min-w-0">
+                      <span className="truncate text-sm">No remote models configured</span>
+                      <span className="text-xs text-muted-foreground truncate">
+                        Update your .env to enable remote providers
+                      </span>
+                    </div>
+                  </div>
+                </SelectItem>
+              )}
+            </SelectGroup>
+          )}
 
           {/* Local models from configured provider */}
           {ollamaModels.length > 0 && (
             <SelectGroup>
-              <SelectLabel>
-                Local {resolvedLocalProviderLabel} Models
-              </SelectLabel>
+              <SelectLabel>Local Models</SelectLabel>
               {ollamaModels.map((model) => {
                 const option = createModelOption(model);
                 const Icon = option.icon;
@@ -253,32 +261,6 @@ export function ModelPicker({
               <SelectLabel>Local LM Studio Models</SelectLabel>
               {lmStudioModels.map((model) => {
                 const option = createModelOption(model);
-                const Icon = option.icon;
-                return (
-                  <SelectItem key={option.id} value={option.id}>
-                    <div className="flex items-center gap-3">
-                      <Icon className="h-4 w-4 flex-shrink-0" />
-                      <div className="flex flex-col min-w-0">
-                        <span className="truncate text-sm">
-                          {option.displayLabel}
-                        </span>
-                        <span className="text-xs text-muted-foreground truncate">
-                          {option.description}
-                        </span>
-                      </div>
-                    </div>
-                  </SelectItem>
-                );
-              })}
-            </SelectGroup>
-          )}
-
-          {/* Downloadable Ollama Models */}
-          {showDownloadable && downloadableOllamaModels.length > 0 && (
-            <SelectGroup>
-              <SelectLabel>Downloadable Ollama Models</SelectLabel>
-              {downloadableOllamaModels.map((model) => {
-                const option = createModelOption(model, true);
                 const Icon = option.icon;
                 return (
                   <SelectItem key={option.id} value={option.id}>

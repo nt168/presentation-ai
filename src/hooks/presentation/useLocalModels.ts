@@ -28,6 +28,12 @@ interface LocalModelsResult {
   command?: string | null;
 }
 
+export interface LocalModelsDisplayData {
+  localModels: ModelInfo[];
+  localProviderLabel: string;
+  command: string | null;
+}
+
 // Fetch models from Ollama
 function toTitle(value: string | null | undefined): string {
   if (!value) return "";
@@ -121,63 +127,6 @@ async function fetchLocalModels(): Promise<LocalModelsResult> {
   } satisfies LocalModelsResult;
 }
 
-// Popular downloadable models for Ollama
-export const downloadableModels: ModelInfo[] = [
-  {
-    id: "ollama-llama3.1:8b",
-    name: "llama3.1:8b",
-    provider: "ollama",
-  },
-  {
-    id: "ollama-llama3.1:70b",
-    name: "llama3.1:70b",
-    provider: "ollama",
-  },
-  {
-    id: "ollama-llama3.2:3b",
-    name: "llama3.2:3b",
-    provider: "ollama",
-  },
-  {
-    id: "ollama-llama3.2:8b",
-    name: "llama3.2:8b",
-    provider: "ollama",
-  },
-  {
-    id: "ollama-mistral:7b",
-    name: "mistral:7b",
-    provider: "ollama",
-  },
-  {
-    id: "ollama-codellama:7b",
-    name: "codellama:7b",
-    provider: "ollama",
-  },
-  {
-    id: "ollama-qwen2.5:7b",
-    name: "qwen2.5:7b",
-    provider: "ollama",
-  },
-  {
-    id: "ollama-gemma2:9b",
-    name: "gemma2:9b",
-    provider: "ollama",
-  },
-  {
-    id: "ollama-phi3:3.8b",
-    name: "phi3:3.8b",
-    provider: "ollama",
-  },
-  {
-    id: "ollama-neural-chat:7b",
-    name: "neural-chat:7b",
-    provider: "ollama",
-  },
-];
-
-// Fallback models when no local models are available (same as downloadable for now)
-export const fallbackModels: ModelInfo[] = downloadableModels;
-
 // localStorage keys
 const MODELS_CACHE_KEY = "presentation-models-cache";
 const SELECTED_MODEL_KEY = "presentation-selected-model";
@@ -259,7 +208,7 @@ export function useLocalModels() {
   // Get cached models for initial load
   const cachedModels = getCachedModels();
 
-  const query = useQuery({
+  const query = useQuery<LocalModelsResult, Error, LocalModelsDisplayData>({
     queryKey: ["local-models"],
     queryFn: async () => {
       const freshModels = await fetchLocalModels();
@@ -270,19 +219,11 @@ export function useLocalModels() {
     retry: 1,
     retryDelay: 1000,
     initialData: cachedModels || undefined,
-    select: (data) => {
-      const localModels =
-        data.models.length > 0 ? data.models : fallbackModels;
-      const showDownloadable = localModels.length < 10;
-
-      return {
-        localModels,
-        downloadableModels: showDownloadable ? downloadableModels : [],
-        showDownloadable,
-        localProviderLabel: data.providerLabel,
-        command: data.command ?? null,
-      };
-    },
+    select: (data) => ({
+      localModels: data.models,
+      localProviderLabel: data.providerLabel,
+      command: data.command ?? null,
+    }),
   });
 
   // Mark initial load as complete after first render
