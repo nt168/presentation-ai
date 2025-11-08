@@ -1,6 +1,7 @@
 "use client";
 
 import { type ImageModelList } from "@/app/_actions/image/generate";
+import { useAppConfig } from "@/hooks/presentation/useAppConfig";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -12,12 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Image, Wand2 } from "lucide-react";
-
-export const IMAGE_MODELS: { value: ImageModelList; label: string }[] = [
-  { value: "black-forest-labs/FLUX.1-schnell-Free", label: "FLUX Fast" },
-  { value: "black-forest-labs/FLUX.1-dev", label: "FLUX Developer" },
-  { value: "black-forest-labs/FLUX1.1-pro", label: "FLUX Premium" },
-];
+import { useEffect, useMemo } from "react";
 
 interface ImageSourceSelectorProps {
   imageSource: "ai" | "stock";
@@ -40,6 +36,45 @@ export function ImageSourceSelector({
   className,
   showLabel = true,
 }: ImageSourceSelectorProps) {
+  const { data: appConfig } = useAppConfig();
+
+  const aiModels = appConfig?.image.models ?? [];
+  const remoteModelId = appConfig?.image.remoteModelId ?? null;
+  const localModelId = appConfig?.image.localModelId ?? null;
+  const remoteAiModels = useMemo(
+    () => aiModels.filter((model) => model.source === "remote"),
+    [aiModels],
+  );
+  const localAiModels = useMemo(
+    () => aiModels.filter((model) => model.source === "local"),
+    [aiModels],
+  );
+
+  useEffect(() => {
+    if (imageSource !== "ai") {
+      return;
+    }
+
+    const hasCurrentModel = aiModels.some(
+      (model) => model.id === imageModel,
+    );
+
+    if (!hasCurrentModel) {
+      const fallbackModel = remoteModelId || localModelId || aiModels[0]?.id;
+
+      if (fallbackModel) {
+        onImageModelChange(fallbackModel as ImageModelList);
+      }
+    }
+  }, [
+    aiModels,
+    localModelId,
+    remoteModelId,
+    imageModel,
+    imageSource,
+    onImageModelChange,
+  ]);
+
   return (
     <div className={className}>
       {showLabel && (
@@ -68,17 +103,38 @@ export function ImageSourceSelector({
           <SelectValue placeholder="Select image generation method" />
         </SelectTrigger>
         <SelectContent>
-          <SelectGroup>
-            <SelectLabel className="text-primary/80 flex items-center gap-1">
-              <Wand2 size={10} />
-              AI Generation
-            </SelectLabel>
-            {IMAGE_MODELS.map((model) => (
-              <SelectItem key={model.value} value={model.value}>
-                {model.label}
-              </SelectItem>
-            ))}
-          </SelectGroup>
+          {(remoteAiModels.length > 0 || localAiModels.length > 0) && (
+            <SelectGroup>
+              <SelectLabel className="text-primary/80 flex items-center gap-1">
+                <Wand2 size={10} />
+                AI Generation
+              </SelectLabel>
+              {remoteAiModels.length > 0 && (
+                <>
+                  <SelectLabel className="pt-2 text-xs text-muted-foreground">
+                    Remote AI Models
+                  </SelectLabel>
+                  {remoteAiModels.map((model) => (
+                    <SelectItem key={model.id} value={model.id}>
+                      {model.label}
+                    </SelectItem>
+                  ))}
+                </>
+              )}
+              {localAiModels.length > 0 && (
+                <>
+                  <SelectLabel className="pt-2 text-xs text-muted-foreground">
+                    Local AI Models
+                  </SelectLabel>
+                  {localAiModels.map((model) => (
+                    <SelectItem key={model.id} value={model.id}>
+                      {model.label}
+                    </SelectItem>
+                  ))}
+                </>
+              )}
+            </SelectGroup>
+          )}
           <SelectGroup>
             <SelectLabel className="text-primary/80 flex items-center gap-1">
               <Image size={10} />

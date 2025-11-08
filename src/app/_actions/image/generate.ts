@@ -9,16 +9,11 @@ import { UTFile } from "uploadthing/server";
 
 const together = new Together({ apiKey: env.TOGETHER_AI_API_KEY });
 
-export type ImageModelList =
-  | "black-forest-labs/FLUX1.1-pro"
-  | "black-forest-labs/FLUX.1-schnell"
-  | "black-forest-labs/FLUX.1-schnell-Free"
-  | "black-forest-labs/FLUX.1-pro"
-  | "black-forest-labs/FLUX.1-dev";
+export type ImageModelList = string;
 
 export async function generateImageAction(
   prompt: string,
-  model: ImageModelList = "black-forest-labs/FLUX.1-schnell-Free",
+  model: ImageModelList = env.RMT_IM_NAME ?? "black-forest-labs/FLUX.1-schnell-Free",
 ) {
   // Get the current session
   const session = await auth();

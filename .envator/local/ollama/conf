@@ -1,0 +1,5 @@
+[service]
+server="0.0.0.0:11434"
+[command]
+models="ollama list"
+

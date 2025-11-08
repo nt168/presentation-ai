@@ -14,6 +14,7 @@ import {
   setSelectedModel,
   useLocalModels,
 } from "@/hooks/presentation/useLocalModels";
+import { useAppConfig } from "@/hooks/presentation/useAppConfig";
 import { usePresentationState } from "@/states/presentation-state";
 import { Bot, Cpu, Loader2, Monitor } from "lucide-react";
 import { useEffect, useRef } from "react";
@@ -26,6 +27,7 @@ export function ModelPicker({
   const { modelProvider, setModelProvider, modelId, setModelId } =
     usePresentationState();
 
+  const { data: appConfig } = useAppConfig();
   const { data: modelsData, isLoading, isInitialLoad } = useLocalModels();
   const hasRestoredFromStorage = useRef(false);
 
@@ -45,13 +47,21 @@ export function ModelPicker({
   }, [setModelProvider, setModelId]);
 
   // Use cached data if available, otherwise show fallback
+  const defaultLocalProviderLabel =
+    appConfig?.llm.local?.displayName ?? "Ollama";
+  const cloudModelLabel = appConfig?.llm.remote.displayName ?? "GPT-4o-mini";
+
   const displayData = modelsData || {
     localModels: fallbackModels,
     downloadableModels: [],
     showDownloadable: true,
+    localProviderLabel: defaultLocalProviderLabel,
   };
 
-  const { localModels, downloadableModels, showDownloadable } = displayData;
+  const { localModels, downloadableModels, showDownloadable, localProviderLabel } =
+    displayData;
+  const resolvedLocalProviderLabel =
+    localProviderLabel || defaultLocalProviderLabel;
 
   // Group models by provider
   const ollamaModels = localModels.filter(
@@ -73,12 +83,12 @@ export function ModelPicker({
     label: model.name,
     displayLabel:
       model.provider === "ollama"
-        ? `ollama ${model.name}`
+        ? `${resolvedLocalProviderLabel} ${model.name}`
         : `lm-studio ${model.name}`,
     icon: model.provider === "ollama" ? Cpu : Monitor,
     description: isDownloadable
-      ? `Downloadable ${model.provider === "ollama" ? "Ollama" : "LM Studio"} model (will auto-download)`
-      : `Local ${model.provider === "ollama" ? "Ollama" : "LM Studio"} model`,
+      ? `Downloadable ${model.provider === "ollama" ? resolvedLocalProviderLabel : "LM Studio"} model (will auto-download)`
+      : `Local ${model.provider === "ollama" ? resolvedLocalProviderLabel : "LM Studio"} model`,
     isDownloadable,
   });
 
@@ -98,7 +108,7 @@ export function ModelPicker({
 
     if (currentValue === "openai") {
       return {
-        label: "GPT-4o-mini",
+        label: cloudModelLabel,
         icon: Bot,
       };
     }
@@ -195,24 +205,26 @@ export function ModelPicker({
 
           {/* OpenAI Group */}
           <SelectGroup>
-            <SelectLabel>Cloud Models</SelectLabel>
-            <SelectItem value="openai">
-              <div className="flex items-center gap-3">
-                <Bot className="h-4 w-4 flex-shrink-0" />
-                <div className="flex flex-col min-w-0">
-                  <span className="truncate text-sm">GPT-4o-mini</span>
-                  <span className="text-xs text-muted-foreground truncate">
-                    Cloud-based AI model
-                  </span>
-                </div>
+          <SelectLabel>Cloud Models</SelectLabel>
+          <SelectItem value="openai">
+            <div className="flex items-center gap-3">
+              <Bot className="h-4 w-4 flex-shrink-0" />
+              <div className="flex flex-col min-w-0">
+                <span className="truncate text-sm">{cloudModelLabel}</span>
+                <span className="text-xs text-muted-foreground truncate">
+                  Cloud-based AI model
+                </span>
               </div>
-            </SelectItem>
-          </SelectGroup>
+            </div>
+          </SelectItem>
+        </SelectGroup>
 
-          {/* Local Ollama Models */}
+          {/* Local models from configured provider */}
           {ollamaModels.length > 0 && (
             <SelectGroup>
-              <SelectLabel>Local Ollama Models</SelectLabel>
+              <SelectLabel>
+                Local {resolvedLocalProviderLabel} Models
+              </SelectLabel>
               {ollamaModels.map((model) => {
                 const option = createModelOption(model);
                 const Icon = option.icon;
