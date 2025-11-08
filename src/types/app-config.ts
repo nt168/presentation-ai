@@ -25,7 +25,7 @@ export interface RemoteLLMConfig {
 
 export interface AppConfig {
   llm: {
-    remote: RemoteLLMConfig;
+    remote: RemoteLLMConfig | null;
     local: LocalLLMConfig | null;
   };
   image: {

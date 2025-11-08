@@ -3,11 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 
 const DEFAULT_APP_CONFIG: AppConfig = {
   llm: {
-    remote: {
-      provider: "openai",
-      displayName: "GPT-4o-mini",
-      isConfigured: true,
-    },
+    remote: null,
     local: {
       providerId: "ollama",
       displayName: "Ollama",
