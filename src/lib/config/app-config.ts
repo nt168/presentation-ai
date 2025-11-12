@@ -17,24 +17,6 @@ function formatDisplayName(value: string | null | undefined): string {
     .join(" ");
 }
 
-const DEFAULT_IMAGE_MODELS: ImageModelOption[] = [
-  {
-    id: "black-forest-labs/FLUX.1-schnell-Free",
-    label: "FLUX Fast",
-    source: "remote",
-  },
-  {
-    id: "black-forest-labs/FLUX.1-dev",
-    label: "FLUX Developer",
-    source: "remote",
-  },
-  {
-    id: "black-forest-labs/FLUX1.1-pro",
-    label: "FLUX Premium",
-    source: "remote",
-  },
-];
-
 function normalizeServerAddress(server: string | null | undefined): string | null {
   if (!server) return null;
   const trimmed = server.trim();
@@ -113,14 +95,6 @@ function resolveImageModels(): {
       label: localModelId,
       source: "local",
     });
-  }
-
-  if (configuredModels.length === 0) {
-    return {
-      models: DEFAULT_IMAGE_MODELS,
-      remoteModelId: DEFAULT_IMAGE_MODELS[0]?.id ?? null,
-      localModelId: null,
-    };
   }
 
   return {

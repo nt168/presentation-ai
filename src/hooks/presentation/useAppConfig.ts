@@ -14,24 +14,8 @@ const DEFAULT_APP_CONFIG: AppConfig = {
     },
   },
   image: {
-    models: [
-      {
-        id: "black-forest-labs/FLUX.1-schnell-Free",
-        label: "FLUX Fast",
-        source: "remote",
-      },
-      {
-        id: "black-forest-labs/FLUX.1-dev",
-        label: "FLUX Developer",
-        source: "remote",
-      },
-      {
-        id: "black-forest-labs/FLUX1.1-pro",
-        label: "FLUX Premium",
-        source: "remote",
-      },
-    ],
-    remoteModelId: "black-forest-labs/FLUX.1-schnell-Free",
+    models: [],
+    remoteModelId: null,
     localModelId: null,
   },
 };

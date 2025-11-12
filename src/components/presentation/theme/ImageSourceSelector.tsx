@@ -12,7 +12,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Image, Wand2 } from "lucide-react";
 import { useEffect, useMemo } from "react";
 
 interface ImageSourceSelectorProps {
@@ -103,44 +102,26 @@ export function ImageSourceSelector({
           <SelectValue placeholder="Select image generation method" />
         </SelectTrigger>
         <SelectContent>
-          {(remoteAiModels.length > 0 || localAiModels.length > 0) && (
-            <SelectGroup>
-              <SelectLabel className="text-primary/80 flex items-center gap-1">
-                <Wand2 size={10} />
-                AI Generation
-              </SelectLabel>
-              {remoteAiModels.length > 0 && (
-                <>
-                  <SelectLabel className="pt-2 text-xs text-muted-foreground">
-                    Remote AI Models
-                  </SelectLabel>
-                  {remoteAiModels.map((model) => (
-                    <SelectItem key={model.id} value={model.id}>
-                      {model.label}
-                    </SelectItem>
-                  ))}
-                </>
-              )}
-              {localAiModels.length > 0 && (
-                <>
-                  <SelectLabel className="pt-2 text-xs text-muted-foreground">
-                    Local AI Models
-                  </SelectLabel>
-                  {localAiModels.map((model) => (
-                    <SelectItem key={model.id} value={model.id}>
-                      {model.label}
-                    </SelectItem>
-                  ))}
-                </>
-              )}
-            </SelectGroup>
-          )}
           <SelectGroup>
-            <SelectLabel className="text-primary/80 flex items-center gap-1">
-              <Image size={10} />
-              Stock Images
+            <SelectLabel className="text-xs font-semibold text-muted-foreground uppercase">
+              LOCAL
             </SelectLabel>
-            <SelectItem value="stock-unsplash">Unsplash</SelectItem>
+            {localAiModels.map((model) => (
+              <SelectItem key={model.id} value={model.id}>
+                {model.label || model.id}
+              </SelectItem>
+            ))}
+          </SelectGroup>
+          <SelectGroup>
+            <SelectLabel className="text-xs font-semibold text-muted-foreground uppercase">
+              REMOTE
+            </SelectLabel>
+            {remoteAiModels.map((model) => (
+              <SelectItem key={model.id} value={model.id}>
+                {model.label || model.id}
+              </SelectItem>
+            ))}
+            <SelectItem value="stock-unsplash">unsplash</SelectItem>
           </SelectGroup>
         </SelectContent>
       </Select>
